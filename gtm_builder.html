@@ -1,0 +1,1231 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>will GTM Builder</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Removida a fonte 'Inter' para usar a pilha de fontes do sistema, alinhada à família 'Will Sans' funcional -->
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            color: #1d1e1b; /* Cor primária de texto do will bank */
+        }
+        /* Estilos para o stepper */
+        .step {
+            transition: all 0.3s ease;
+        }
+        .step-active {
+            background-color: #ffd900; /* Amarelo will bank */
+            color: #1d1e1b; /* Preto will bank */
+            border-color: #ffd900;
+        }
+        .step-completed {
+            background-color: #27c2a8; /* Verde will bank (Cor de Apoio) */
+            color: white;
+            border-color: #27c2a8;
+        }
+        .step-inactive {
+            background-color: #F3F4F6; /* gray-100 */
+            color: #4B5563; /* gray-600 */
+            border-color: #D1D5DB; /* gray-300 */
+        }
+        /* Ocultar cards inativos */
+        .gtm-card {
+            display: none;
+        }
+        .gtm-card-active {
+            display: block;
+        }
+        /* Animação de carregamento */
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .loader {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-left-color: #ffd900; /* Amarelo will bank */
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+        }
+        /* Estilo para o modal da API Key */
+        .modal-backdrop {
+            background-color: rgba(0, 0, 0, 0.6);
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen p-4 md:p-10">
+
+    <!-- Modal da API Key -->
+    <div id="api-key-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 modal-backdrop hidden">
+        <div class="bg-white w-full max-w-md p-6 rounded-2xl shadow-xl">
+            <h2 class="text-2xl font-bold text-[#1d1e1b]">Configuração Necessária ⚙️</h2>
+            <p class="text-gray-600 mt-2">Para usar a IA, cole sua chave de API do Google AI Studio (MakerSuite) aqui. Ela será salva apenas no seu navegador.</p>
+            <div class="mt-4">
+                <label for="api-key-input" class="block text-sm font-medium text-gray-700">Google AI Studio API Key</label>
+                <input type="password" id="api-key-input" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-[#ffd900] focus:border-[#ffd900]" placeholder="Cole sua chave aqui...">
+                <p id="api-key-error" class="text-red-600 text-sm mt-1 hidden">Chave inválida. Verifique e tente novamente.</p>
+            </div>
+            <div class="mt-6 flex justify-end">
+                <button id="btn-save-api-key" class="bg-[#ffd900] text-[#1d1e1b] px-5 py-2 rounded-lg font-medium hover:bg-yellow-500 transition-colors">
+                    Salvar Chave
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- O bg-white e shadow-xl estão alinhados com a UI limpa do brandbook -->
+    <div class="max-w-6xl mx-auto bg-white rounded-2xl shadow-xl overflow-hidden">
+        <header class="p-6 border-b border-gray-200 flex justify-between items-center">
+            <div>
+                <!-- Título com a marca e tom de voz will bank -->
+                <h1 class="text-3xl font-bold text-[#1d1e1b]">will GTM Builder 🟡</h1>
+                <p class="text-gray-600 mt-1">Nosso app pra criar, testar e escalar GTM.</p>
+            </div>
+            <!-- Botão de Configurações da API Key -->
+            <button id="btn-settings" title="Configurar API Key" class="text-gray-500 hover:text-[#1d1e1b] transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.096 2.572-1.065z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+            </button>
+        </header>
+
+        <!-- Stepper -->
+        <nav class="p-6 border-b border-gray-200">
+            <ol class="flex flex-wrap items-center justify-center gap-4">
+                <li class="flex-1 min-w-0" data-step="1">
+                    <div id="step-1" class="step step-active w-full flex flex-col md:flex-row items-center p-3 rounded-lg border-2">
+                        <span class="w-8 h-8 flex items-center justify-center rounded-full font-bold text-lg step-inactive" style="min-width: 2rem;">1</span>
+                        <span class="mt-2 md:mt-0 md:ml-3 text-center md:text-left font-medium">Diagnóstico</span>
+                    </div>
+                </li>
+                <li class="flex-1 min-w-0" data-step="2">
+                    <div id="step-2" class="step w-full flex flex-col md:flex-row items-center p-3 rounded-lg border-2 step-inactive">
+                        <span class="w-8 h-8 flex items-center justify-center rounded-full font-bold text-lg step-inactive" style="min-width: 2rem;">2</span>
+                        <span class="mt-2 md:mt-0 md:ml-3 text-center md:text-left font-medium">Ideias</span>
+                    </div>
+                </li>
+                <li class="flex-1 min-w-0" data-step="3">
+                    <div id="step-3" class="step w-full flex flex-col md:flex-row items-center p-3 rounded-lg border-2 step-inactive">
+                        <span class="w-8 h-8 flex items-center justify-center rounded-full font-bold text-lg step-inactive" style="min-width: 2rem;">3</span>
+                        <span class="mt-2 md:mt-0 md:ml-3 text-center md:text-left font-medium">Briefing</span>
+                    </div>
+                </li>
+                <li class="flex-1 min-w-0" data-step="4">
+                    <div id="step-4" class="step w-full flex flex-col md:flex-row items-center p-3 rounded-lg border-2 step-inactive">
+                        <span class="w-8 h-8 flex items-center justify-center rounded-full font-bold text-lg step-inactive" style="min-width: 2rem;">4</span>
+                        <span class="mt-2 md:mt-0 md:ml-3 text-center md:text-left font-medium">Teste A/B</span>
+                    </div>
+                </li>
+                <li class="flex-1 min-w-0" data-step="5">
+                    <div id="step-5" class="step w-full flex flex-col md:flex-row items-center p-3 rounded-lg border-2 step-inactive">
+                        <span class="w-8 h-8 flex items-center justify-center rounded-full font-bold text-lg step-inactive" style="min-width: 2rem;">5</span>
+                        <span class="mt-2 md:mt-0 md:ml-3 text-center md:text-left font-medium">Aprendizados</span>
+                    </div>
+                </li>
+                <li class="flex-1 min-w-0" data-step="6">
+                    <div id="step-6" class="step w-full flex flex-col md:flex-row items-center p-3 rounded-lg border-2 step-inactive">
+                        <span class="w-8 h-8 flex items-center justify-center rounded-full font-bold text-lg step-inactive" style="min-width: 2rem;">6</span>
+                        <span class="mt-2 md:mt-0 md:ml-3 text-center md:text-left font-medium">Próximo passo</span>
+                    </div>
+                </li>
+                 <li class="flex-1 min-w-0" data-step="7">
+                    <div id="step-7" class="step w-full flex flex-col md:flex-row items-center p-3 rounded-lg border-2 step-inactive">
+                        <span class="w-8 h-8 flex items-center justify-center rounded-full font-bold text-lg step-inactive" style="min-width: 2rem;">7</span>
+                        <span class="mt-2 md:mt-0 md:ml-3 text-center md:text-left font-medium">Resumo</span>
+                    </div>
+                </li>
+            </ol>
+        </nav>
+
+        <main class="p-6 md:p-8">
+            <!-- Card 1: Diagnóstico -->
+            <div id="card-1" class="gtm-card gtm-card-active">
+                <h2 class="text-2xl font-semibold text-[#1d1e1b]">🟡 Card 1: Entendendo a dor</h2>
+                <p class="text-gray-600 mt-1">Aqui a gente define o que vamos mudar e onde.</p>
+                <form id="form-card-1" class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label for="c1-jornada" class="block text-sm font-medium text-gray-700">Jornada</label>
+                        <select id="c1-jornada" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-[#ffd900] focus:border-[#ffd900] truncate">
+                            <option>aquisição</option>
+                            <option>onboarding</option>
+                            <option>ativação</option>
+                            <option>utilização do cartão</option>
+                            <option>recorrência e fidelização na utilização do cartão</option>
+                            <option>antecipação de parcelas</option>
+                            <option>parcelamento de compras à vista</option>
+                            <option>pix no crédito</option>
+                            <option>atraso no pagamento da fatura</option>
+                            <option>parcelou a fatura depois do vencimento</option>
+                            <option>parcelou a fatura antes do vencimento</option>
+                            <option>rotativo</option>
+                            <option>renegociair o rotativo</option>
+                            <option>parcelamento compulsório</option>
+                            <option>renegociar o parcelamento</option>
+                            <option>cobrança</option>
+                            <option>inadimplência</option>
+                            <option>negociação</option>
+                        </select>
+                    </div>
+                     <div>
+                        <label for="c1-nucleo-dor" class="block text-sm font-medium text-gray-700">Núcleo da Dor</label>
+                        <select id="c1-nucleo-dor" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-[#ffd900] focus:border-[#ffd900] truncate">
+                            <option value="">Selecione o núcleo</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="c1-resumo-dor" class="block text-sm font-medium text-gray-700">Resumo da Dor</label>
+                        <select id="c1-resumo-dor" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-[#ffd900] focus:border-[#ffd900] truncate" disabled>
+                            <option value="">Selecione o resumo</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="c1-frase-problema-dor" class="block text-sm font-medium text-gray-700">Frase-Problema da Dor</label>
+                        <select id="c1-frase-problema-dor" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-[#ffd900] focus:border-[#ffd900] truncate" disabled>
+                            <option value="">Selecione a frase-problema</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="c1-comportamento-atual" class="block text-sm font-medium text-gray-700">Comportamento Atual</label>
+                        <input type="text" id="c1-comportamento-atual" placeholder="Ex: Paga o mínimo da fatura" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-[#ffd900] focus:border-[#ffd900]">
+                    </div>
+                    <div>
+                        <label for="c1-comportamento-esperado" class="block text-sm font-medium text-gray-700">Comportamento Esperado</label>
+                        <input type="text" id="c1-comportamento-esperado" placeholder="Ex: Parcela a fatura" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-[#ffd900] focus:border-[#ffd900]">
+                    </div>
+                </form>
+                <div class="mt-6">
+                    <!-- Botão com cor primária will bank (amarelo) -->
+                    <button id="btn-card-1" class="bg-[#ffd900] text-[#1d1e1b] px-5 py-2 rounded-lg font-medium hover:bg-yellow-500 transition-colors">
+                        Gerar diagnóstico
+                    </button>
+                </div>
+                <!-- Output box com cores neutras -->
+                <div id="output-card-1" class="mt-6 p-4 bg-gray-50 border border-gray-200 rounded-lg hidden">
+                    <h3 class="text-lg font-semibold text-[#1d1e1b]">Output Gerado</h3>
+                    <div id="output-content-1" class="mt-2 text-gray-800 whitespace-pre-wrap"></div>
+                </div>
+            </div>
+
+            <!-- Card 2: Ideias -->
+            <div id="card-2" class="gtm-card">
+                <h2 class="text-2xl font-semibold text-[#1d1e1b]">🟡 Card 2: Ideias e Testes</h2>
+                <p class="text-gray-600 mt-1">Brainstorm de conteúdos e formatos pra validar.</p>
+                
+                <div class="mt-4 p-4 bg-gray-50 rounded-lg border">
+                    <h4 class="font-semibold text-gray-800">Contexto (Card 1):</h4>
+                    <div id="context-card-2" class="text-sm text-gray-600 mt-2 whitespace-pre-wrap"></div>
+                </div>
+
+                <form id="form-card-2" class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label for="c2-tipo-conteudo" class="block text-sm font-medium text-gray-700">Tipo de Conteúdo Desejado</label>
+                        <select id="c2-tipo-conteudo" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-[#ffd900] focus:border-[#ffd900]">
+                            <option>simulador</option>
+                            <option>infográfico</option>
+                            <option>quiz</option>
+                            <option>game</option>
+                            <option>blog</option>
+                            <option>vídeo</option>
+                            <option>áudio</option>
+                            <option>e-mail</option>
+                            <option>push app</option>
+                            <option>header app</option>
+                            <option>in-app</option>
+                            <option>redes sociais</option>
+                            <option>landing page</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Canal Preferencial (multi-select)</label>
+                        <div class="mt-2 grid grid-cols-2 sm:grid-cols-3 gap-2">
+                            <label class="flex items-center p-2 rounded-md border border-gray-300 hover:bg-gray-50">
+                                <input type="checkbox" name="c2-canal" value="app" class="rounded text-[#1d1e1b] focus:ring-[#ffd900]">
+                                <span class="ml-2 text-sm text-gray-700">app</span>
+                            </label>
+                            <label class="flex items-center p-2 rounded-md border border-gray-300 hover:bg-gray-50">
+                                <input type="checkbox" name="c2-canal" value="whatsapp" class="rounded text-[#1d1e1b] focus:ring-[#ffd900]">
+                                <span class="ml-2 text-sm text-gray-700">whatsapp</span>
+                            </label>
+                            <label class="flex items-center p-2 rounded-md border border-gray-300 hover:bg-gray-50">
+                                <input type="checkbox" name="c2-canal" value="CRM" class="rounded text-[#1d1e1b] focus:ring-[#ffd900]">
+                                <span class="ml-2 text-sm text-gray-700">CRM</span>
+                            </label>
+                            <label class="flex items-center p-2 rounded-md border border-gray-300 hover:bg-gray-50">
+                                <input type="checkbox" name="c2-canal" value="blog" class="rounded text-[#1d1e1b] focus:ring-[#ffd900]">
+                                <span class="ml-2 text-sm text-gray-700">blog</span>
+                            </label>
+                             <label class="flex items-center p-2 rounded-md border border-gray-300 hover:bg-gray-50">
+                                <input type="checkbox" name="c2-canal" value="redes sociais" class="rounded text-[#1d1e1b] focus:ring-[#ffd900]">
+                                <span class="ml-2 text-sm text-gray-700">redes sociais</span>
+                            </label>
+                        </div>
+                    </div>
+                </form>
+                 <div class="mt-6">
+                    <button id="btn-card-2" class="bg-[#ffd900] text-[#1d1e1b] px-5 py-2 rounded-lg font-medium hover:bg-yellow-500 transition-colors">
+                        Gerar ideias
+                    </button>
+                </div>
+                <div id="output-card-2" class="mt-6 p-4 bg-gray-50 border border-gray-200 rounded-lg hidden">
+                    <h3 class="text-lg font-semibold text-[#1d1e1b]">Output Gerado</h3>
+                    <div id="output-content-2" class="mt-2 text-gray-800 whitespace-pre-wrap"></div>
+                </div>
+            </div>
+
+            <!-- Card 3: Briefing -->
+            <div id="card-3" class="gtm-card">
+                <h2 class="text-2xl font-semibold text-[#1d1e1b]">🟡 Card 3: Mão na massa (Briefing)</h2>
+                <p class="text-gray-600 mt-1">Gera um briefing acionável pro time de conteúdo.</p>
+                
+                <div class="mt-4 p-4 bg-gray-50 rounded-lg border">
+                    <h4 class="font-semibold text-gray-800">Contexto (Card 1 & 2):</h4>
+                    <div id="context-card-3" class="text-sm text-gray-600 mt-2 whitespace-pre-wrap"></div>
+                </div>
+                
+                <form id="form-card-3" class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label for="c3-tipo-conteudo" class="block text-sm font-medium text-gray-700">Tipo de Conteúdo (Selecionado)</label>
+                        <input type="text" id="c3-tipo-conteudo" placeholder="Ex: Quiz (vindo do Card 2)" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-[#ffd900] focus:border-[#ffd900]">
+                    </div>
+                     <div>
+                        <label for="c3-canal" class="block text-sm font-medium text-gray-700">Canal (Selecionado)</label>
+                        <input type="text" id="c3-canal" placeholder="Ex: App (vindo do Card 2)" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-[#ffd900] focus:border-[#ffd900]">
+                    </div>
+                    <div>
+                        <label for="c3-tom-voz" class="block text-sm font-medium text-gray-700">Tom de Voz</label>
+                        <select id="c3-tom-voz" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-[#ffd900] focus:border-[#ffd900]">
+                            <option>Acolhedor</option>
+                            <option>Empático</option>
+                            <option>Consultivo</option>
+                            <option>Direto</option>
+                            <option>Inspirador</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="c3-cta" class="block text-sm font-medium text-gray-700">CTA Desejado</label>
+                        <input type="text" id="c3-cta" placeholder="Ex: 'Simular parcelamento'" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-[#ffd900] focus:border-[#ffd900]">
+                    </div>
+                </form>
+                <div class="mt-6">
+                    <button id="btn-card-3" class="bg-[#ffd900] text-[#1d1e1b] px-5 py-2 rounded-lg font-medium hover:bg-yellow-500 transition-colors">
+                        Gerar briefing
+                    </button>
+                </div>
+                <div id="output-card-3" class="mt-6 p-4 bg-gray-50 border border-gray-200 rounded-lg hidden">
+                    <h3 class="text-lg font-semibold text-[#1d1e1b]">Output Gerado</h3>
+                    <div id="output-content-3" class="mt-2 text-gray-800 whitespace-pre-wrap"></div>
+                </div>
+            </div>
+
+            <!-- Card 4: Teste A/B -->
+            <div id="card-4" class="gtm-card">
+                <h2 class="text-2xl font-semibold text-[#1d1e1b]">🟡 Card 4: Como vamos testar</h2>
+                <p class="text-gray-600 mt-1">Planeja o experimento com rigor.</p>
+                
+                <div class="mt-4 p-4 bg-gray-50 rounded-lg border">
+                    <h4 class="font-semibold text-gray-800">Hipótese (Card 2):</h4>
+                    <div id="context-card-4" class="text-sm text-gray-600 mt-2 whitespace-pre-wrap"></div>
+                </div>
+
+                <form id="form-card-4" class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label for="c4-formato" class="block text-sm font-medium text-gray-700">Formato do Experimento</label>
+                        <select id="c4-formato" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-[#ffd900] focus:border-[#ffd900]">
+                            <option>A/B</option>
+                            <option>Multivariado</option>
+                            <option>Holdout</option>
+                            <option>Teste contínuo</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="c4-owner" class="block text-sm font-medium text-gray-700">Owner de Disparo e Tracking</label>
+                        <input type="text" id="c4-owner" placeholder="Ex: Squad de Ativação" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-[#ffd900] focus:border-[#ffd900]">
+                    </div>
+                    <div class="md:col-span-2">
+                        <label for="c4-grupo-teste" class="block text-sm font-medium text-gray-700">Grupo Teste (Definição)</label>
+                        <input type="text" id="c4-grupo-teste" placeholder="Ex: Clientes com 2+ parcelamentos nos últimos 6 meses" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-[#ffd900] focus:border-[#ffd900]">
+                    </div>
+                    <div class="md:col-span-2">
+                        <label for="c4-grupo-controle" class="block text-sm font-medium text-gray-700">Grupo de Controle (GDC) (Definição)</label>
+                        <input type="text" id="c4-grupo-controle" placeholder="Ex: Clientes com mesmo perfil que não recebem a comunicação" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-[#ffd900] focus:border-[#ffd900]">
+                    </div>
+                    <div class="md:col-span-2">
+                        <label for="c4-criterio-sucesso" class="block text-sm font-medium text-gray-700">Critério de Sucesso</label>
+                        <input type="text" id="c4-criterio-sucesso" placeholder="Ex: +10% de adoção do parcelamento inteligente vs. GDC" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-[#ffd900] focus:border-[#ffd900]">
+                    </div>
+                </form>
+                <div class="mt-6 p-4 bg-gray-50 border border-gray-200 rounded-lg">
+                    <h3 class="text-lg font-semibold text-[#1d1e1b]">Output: Ficha Técnica do Experimento</h3>
+                    <div id="output-content-4" class="mt-2 text-gray-800 whitespace-pre-wrap">
+                         <p class="text-gray-500 italic">Preencha os campos acima para gerar a ficha técnica...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Card 5: Dashboard -->
+            <div id="card-5" class="gtm-card">
+                <h2 class="text-2xl font-semibold text-[#1d1e1b]">🟡 Card 5: O que aprendemos</h2>
+                <p class="text-gray-600 mt-1">Centraliza a análise dos testes rodados.</p>
+                
+                 <div class="mt-4 p-4 bg-gray-50 rounded-lg border">
+                    <h4 class="font-semibold text-gray-800">Contexto (Card 4):</h4>
+                    <div id="context-card-5" class="text-sm text-gray-600 mt-2 whitespace-pre-wrap"></div>
+                </div>
+                
+                <form id="form-card-5" class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label for="c5-engajamento" class="block text-sm font-medium text-gray-700">Engajamento com Conteúdo</label>
+                        <input type="text" id="c5-engajamento" placeholder="Ex: CTR de 15%, 80% de conclusão do quiz" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-[#ffd900] focus:border-[#ffd900]">
+                    </div>
+                     <div>
+                        <label for="c5-comportamento" class="block text-sm font-medium text-gray-700">Comportamento Alterado</label>
+                        <input type="text" id="c5-comportamento" placeholder="Ex: +5% de simulações, -2% de pag. mínimo" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-[#ffd900] focus:border-[#ffd900]">
+                    </div>
+                    <div class="md:col-span-2">
+                        <label for="c5-impacto" class="block text-sm font-medium text-gray-700">Impacto em Risco / Negócio</label>
+                        <input type="text" id="c5-impacto" placeholder="Ex: Redução de 1.5% na inadimplência do G1 vs GDC" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-[#ffd900] focus:border-[#ffd900]">
+                    </div>
+                </form>
+                <div class="mt-6">
+                    <button id="btn-card-5" class="bg-[#ffd900] text-[#1d1e1b] px-5 py-2 rounded-lg font-medium hover:bg-yellow-500 transition-colors">
+                        Gerar análise
+                    </button>
+                </div>
+                <div id="output-card-5" class="mt-6 p-4 bg-gray-50 border border-gray-200 rounded-lg hidden">
+                    <h3 class="text-lg font-semibold text-[#1d1e1b]">Output Gerado</h3>
+                    <div id="output-content-5" class="mt-2 text-gray-800 whitespace-pre-wrap"></div>
+                </div>
+            </div>
+            
+            <!-- Card 6: Feedback Loop -->
+            <div id="card-6" class="gtm-card">
+                <h2 class="text-2xl font-semibold text-[#1d1e1b]">🟡 Card 6: Fechando o loop</h2>
+                <p class="text-gray-600 mt-1">Define para onde vai o aprendizado e quem age.</p>
+
+                <div class="mt-4 p-4 bg-gray-50 rounded-lg border">
+                    <h4 class="font-semibold text-gray-800">Resultados (Card 5):</h4>
+                    <div id="context-card-6" class="text-sm text-gray-600 mt-2 whitespace-pre-wrap"></div>
+                </div>
+
+                <form id="form-card-6" class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label for="c6-aprendizado" class="block text-sm font-medium text-gray-700">O que aprendemos (Qualitativo)</label>
+                        <input type="text" id="c6-aprendizado" placeholder="Ex: Clientes odeiam surpresas; preferem previsibilidade." class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-[#ffd900] focus:border-[#ffd900]">
+                    </div>
+                    <div>
+                        <label for="c6-escalar" class="block text-sm font-medium text-gray-700">O que sugerimos escalar</label>
+                        <input type="text" id="c6-escalar" placeholder="Ex: O quiz de 'Saúde Financeira' para todo GDC." class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-[#ffd900] focus:border-[#ffd900]">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Encaminhamento para:</label>
+                        <div class="mt-2 grid grid-cols-1 sm:grid-cols-3 gap-2">
+                            <label class="flex items-center p-2 rounded-md border border-gray-300 hover:bg-gray-50">
+                                <input type="checkbox" name="c6-encaminhar" value="CRM" class="rounded text-[#1d1e1b] focus:ring-[#ffd900]">
+                                <span class="ml-2 text-sm text-gray-700">CRM (Régua)</span>
+                            </label>
+                            <label class="flex items-center p-2 rounded-md border border-gray-300 hover:bg-gray-50">
+                                <input type="checkbox" name="c6-encaminhar" value="Produto" class="rounded text-[#1d1e1b] focus:ring-[#ffd900]">
+                                <span class="ml-2 text-sm text-gray-700">Produto (Feature)</span>
+                            </label>
+                            <label class="flex items-center p-2 rounded-md border border-gray-300 hover:bg-gray-50">
+                                <input type="checkbox" name="c6-encaminhar" value="Risco" class="rounded text-[#1d1e1b] focus:ring-[#ffd900]">
+                                <span class="ml-2 text-sm text-gray-700">Risco (Modelo)</span>
+                            </label>
+                        </div>
+                    </div>
+                    <div>
+                        <label for="c6-owner" class="block text-sm font-medium text-gray-700">Owner Responsável (Próx. Ação)</label>
+                        <input type="text" id="c6-owner" placeholder="Ex: PMM de CRM" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-[#ffd900] focus:border-[#ffd900]">
+                    </div>
+                     <div>
+                        <label for="c6-revisao" class="block text-sm font-medium text-gray-700">Frequência de Revisão</label>
+                        <select id="c6-revisao" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-[#ffd900] focus:border-[#ffd900]">
+                            <option>Semanal</option>
+                            <option>Quinzenal</option>
+                            <option>Mensal</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Card 7: Resumo Final -->
+            <div id="card-7" class="gtm-card">
+                <h2 class="text-2xl font-semibold text-[#27c2a8]">🚀 Resumo da iniciativa</h2>
+                <p class="text-gray-600 mt-1">Tudo pronto pra copiar, colar e compartilhar o aprendizado.</p>
+                <div class="mt-4">
+                    <!-- Botão de download com a cor verde (sucesso/apoio) do will bank -->
+                    <button id="btn-download-summary" class="bg-[#27c2a8] text-white px-5 py-2 rounded-lg font-medium hover:bg-[#1faa8f] transition-colors">
+                        Baixar resumo (.md)
+                    </button>
+                </div>
+                <div id="final-summary" class="mt-6 space-y-6">
+                    <!-- Conteúdo será injetado pelo JS -->
+                </div>
+            </div>
+
+        </main>
+
+        <!-- Navegação -->
+        <footer class="p-6 border-t border-gray-200 bg-gray-50 flex justify-between items-center">
+            <button id="btn-prev" class="bg-gray-300 text-gray-700 px-5 py-2 rounded-lg font-medium hover:bg-gray-400 transition-colors disabled:opacity-50" disabled>
+                Voltar
+            </button>
+            <span id="step-indicator" class="text-sm font-medium text-gray-600">Card 1 de 7</span>
+            <button id="btn-next" class="bg-[#ffd900] text-[#1d1e1b] px-5 py-2 rounded-lg font-medium hover:bg-yellow-500 transition-colors disabled:opacity-50" disabled>
+                Próximo
+            </button>
+        </footer>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            let currentStep = 1;
+            const totalSteps = 7;
+            const gtmData = {};
+            let userApiKey = null; // Variável para armazenar a chave de API
+
+            // Elementos do Modal da API Key
+            const apiKeyModal = document.getElementById('api-key-modal');
+            const btnSaveApiKey = document.getElementById('btn-save-api-key');
+            const apiKeyInput = document.getElementById('api-key-input');
+            const apiKeyError = document.getElementById('api-key-error');
+            const btnSettings = document.getElementById('btn-settings');
+
+            const btnPrev = document.getElementById('btn-prev');
+            const btnNext = document.getElementById('btn-next');
+            const stepIndicator = document.getElementById('step-indicator');
+
+            const btnCard1 = document.getElementById('btn-card-1');
+            const btnCard2 = document.getElementById('btn-card-2');
+            const btnCard3 = document.getElementById('btn-card-3');
+            const btnCard5 = document.getElementById('btn-card-5');
+            const btnDownloadSummary = document.getElementById('btn-download-summary');
+
+            const PRETTY_NAMES = {
+                // Card 1
+                'c1-jornada': 'Jornada',
+                'c1-nucleo-dor': 'Núcleo da Dor',
+                'c1-resumo-dor': 'Resumo da Dor',
+                'c1-frase-problema-dor': 'Frase-Problema da Dor',
+                'c1-comportamento-atual': 'Comportamento Atual',
+                'c1-comportamento-esperado': 'Comportamento Esperado',
+                // Card 2
+                'c2-tipo-conteudo': 'Tipo de Conteúdo Desejado',
+                'c2-canal': 'Canal Preferencial',
+                // Card 3
+                'c3-tipo-conteudo': 'Tipo de Conteúdo (Selecionado)',
+                'c3-canal': 'Canal (Selecionado)',
+                'c3-tom-voz': 'Tom de Voz',
+                'c3-cta': 'CTA Desejado',
+                // Card 4
+                'c4-formato': 'Formato do Experimento',
+                'c4-owner': 'Owner de Disparo e Tracking',
+                'c4-grupo-teste': 'Grupo Teste (Definição)',
+                'c4-grupo-controle': 'Grupo de Controle (GDC) (Definição)',
+                'c4-criterio-sucesso': 'Critério de Sucesso',
+                // Card 5
+                'c5-engajamento': 'Engajamento com Conteúdo',
+                'c5-comportamento': 'Comportamento Alterado',
+                'c5-impacto': 'Impacto em Risco / Negócio',
+                // Card 6
+                'c6-aprendizado': 'O que aprendemos (Qualitativo)',
+                'c6-escalar': 'O que sugerimos escalar',
+                'c6-encaminhar': 'Encaminhamento para',
+                'c6-owner': 'Owner Responsável (Próx. Ação)',
+                'c6-revisao': 'Frequência de Revisão'
+            };
+
+            // --- Lógica da API Key ---
+            function showApiKeyModal() {
+                apiKeyModal.classList.remove('hidden');
+                apiKeyError.classList.add('hidden'); // Reseta erro
+            }
+
+            function hideApiKeyModal() {
+                apiKeyModal.classList.add('hidden');
+            }
+
+            function loadApiKey() {
+                const storedKey = localStorage.getItem('GTM_BUILDER_API_KEY');
+                if (storedKey) {
+                    userApiKey = storedKey;
+                    apiKeyInput.value = storedKey;
+                } else {
+                    showApiKeyModal();
+                }
+            }
+
+            btnSaveApiKey.addEventListener('click', () => {
+                const key = apiKeyInput.value.trim();
+                if (key) {
+                    userApiKey = key;
+                    localStorage.setItem('GTM_BUILDER_API_KEY', key);
+                    hideApiKeyModal();
+                    apiKeyError.classList.add('hidden');
+                } else {
+                    apiKeyError.textContent = "Por favor, insira uma chave válida.";
+                    apiKeyError.classList.remove('hidden');
+                }
+            });
+
+            btnSettings.addEventListener('click', showApiKeyModal);
+
+            // --- Card 1: Lógica de Dores Conectadas ---
+            const c1NucleoDor = document.getElementById('c1-nucleo-dor');
+            const c1ResumoDor = document.getElementById('c1-resumo-dor');
+            const c1FraseProblemaDor = document.getElementById('c1-frase-problema-dor');
+
+            const doresData = [
+                // Núcleo 1: Informacional
+                { nucleo: "Informacional", resumo: "Confusão sobre parcelamento e score", frase: "Acho que parcelar minha fatura vai baixar meu score, então evito e acabo tomando decisões piores." },
+                { nucleo: "Informacional", resumo: "Falta de clareza sobre juros e rotativo", frase: "Não entendo o que é rotativo nem quanto ele custa de verdade." },
+                { nucleo: "Informacional", resumo: "Percepção distorcida de risco", frase: "Atrasar só um pouquinho não parece grave… até eu perceber que já virou bola de neve." },
+                { nucleo: "Informacional", resumo: "Ausência de ferramentas intuitivas", frase: "Se eu pudesse ver quanto os juros vão crescer, talvez eu evitasse atrasar." },
+                { nucleo: "Informacional", resumo: "Mitos sobre crédito saudável", frase: "Acho que usar todo meu limite mostra que estou com o nome limpo — mas é o contrário." },
+                { nucleo: "Informacional", resumo: "Baixo letramento financeiro", frase: "Essas palavras e taxas são difíceis de entender, me sinto perdido com o banco." },
+                { nucleo: "Informacional", resumo: "Desconfiança de orientações bancárias", frase: "Quando o banco tenta me ensinar algo, parece que tem interesse por trás." },
+                // Núcleo 2: Emocional
+                { nucleo: "Emocional", resumo: "Vergonha do endividamento", frase: "Tenho vergonha de dever — me sinto um fracasso." },
+                { nucleo: "Emocional", resumo: "Medo de encarar a própria situação", frase: "Evito abrir o app pra não ver o quanto devo." },
+                { nucleo: "Emocional", resumo: "Ansiedade preventiva", frase: "Mesmo pagando em dia, tenho medo de não conseguir no próximo mês." },
+                { nucleo: "Emocional", resumo: "Negação e procrastinação", frase: "Se eu não olhar agora, talvez o problema se resolva sozinho." },
+                { nucleo: "Emocional", resumo: "Evitação de contato com o banco", frase: "Não quero atender ligação de cobrança, fico nervoso só de ver o número." },
+                { nucleo: "Emocional", resumo: "Isolamento social e emocional", frase: "Minhas dívidas me afastam das pessoas, sinto vergonha de sair." },
+                { nucleo: "Emocional", resumo: "Culpa e autodepreciação", frase: "Me culpo por ter me enrolado, parece que falhei comigo mesmo." },
+                { nucleo: "Emocional", resumo: "Desconfiança de campanhas de ajuda", frase: "Quando o banco fala que quer me ajudar, acho que vem cobrança escondida." },
+                // Núcleo 3: Estrutural
+                { nucleo: "Estrutural", resumo: "Busca por alívio imediato", frase: "Pago o mínimo só pra aliviar a cabeça, mesmo sabendo que a dívida vai crescer." },
+                { nucleo: "Estrutural", resumo: "Compras impulsivas como válvula de escape", frase: "Compro pra esquecer os problemas — mesmo quando sei que não posso." },
+                { nucleo: "Estrutural", resumo: "Ausência de rotina financeira", frase: "Não acompanho meus gastos, só vejo o saldo quando já acabou." },
+                { nucleo: "Estrutural", resumo: "Falta de metas financeiras claras", frase: "Como não tenho um objetivo, gasto o que dá e depois vejo o que faço." },
+                { nucleo: "Estrutural", resumo: "Dificuldade de diferenciar necessidade e desejo", frase: "Eu me convenço de que preciso de coisas que só quero por impulso." },
+                { nucleo: "Estrutural", resumo: "Dependência emocional do consumo", frase: "Comprar me faz sentir no controle, mesmo que dure pouco." },
+                { nucleo: "Estrutural", resumo: "Uso repetido de crédito para tapar buracos", frase: "Pego empréstimo pra pagar outro — nunca saio do vermelho." },
+                { nucleo: "Estrutural", resumo: "Falta de reserva de emergência", frase: "Qualquer imprevisto já vira uma dívida nova." },
+                { nucleo: "Estrutural", resumo: "Descontrole entre status e renda real", frase: "Gasto pra manter uma imagem que não cabe no meu bolso." },
+                { nucleo: "Estrutural", resumo: "Dificuldade em prever consequências", frase: "Não percebo o quanto pequenos parcelamentos somam no fim do mês." }
+            ];
+
+            function populateNucleoDor() {
+                const nucleos = [...new Set(doresData.map(item => item.nucleo))];
+                nucleos.forEach(nucleo => {
+                    const option = document.createElement('option');
+                    option.value = nucleo;
+                    option.textContent = nucleo;
+                    c1NucleoDor.appendChild(option);
+                });
+            }
+
+            c1NucleoDor.addEventListener('change', () => {
+                const selectedNucleo = c1NucleoDor.value;
+                c1ResumoDor.innerHTML = '<option value="">Selecione o resumo</option>';
+                c1FraseProblemaDor.innerHTML = '<option value="">Selecione a frase-problema</option>';
+                c1ResumoDor.disabled = true;
+                c1FraseProblemaDor.disabled = true;
+
+                if (selectedNucleo) {
+                    const resumos = doresData
+                        .filter(item => item.nucleo === selectedNucleo)
+                        .map(item => item.resumo);
+                    
+                    [...new Set(resumos)].forEach(resumo => {
+                        const option = document.createElement('option');
+                        option.value = resumo;
+                        option.textContent = resumo;
+                        c1ResumoDor.appendChild(option);
+                    });
+                    c1ResumoDor.disabled = false;
+                }
+            });
+
+            c1ResumoDor.addEventListener('change', () => {
+                const selectedResumo = c1ResumoDor.value;
+                c1FraseProblemaDor.innerHTML = '<option value="">Selecione a frase-problema</option>';
+                c1FraseProblemaDor.disabled = true;
+
+                if (selectedResumo) {
+                    const frases = doresData
+                        .filter(item => item.resumo === selectedResumo)
+                        .map(item => item.frase);
+                    
+                    frases.forEach(frase => {
+                        const option = document.createElement('option');
+                        option.value = frase;
+                        option.textContent = frase;
+                        c1FraseProblemaDor.appendChild(option);
+                    });
+                    c1FraseProblemaDor.disabled = false;
+                    // Auto-seleciona se houver apenas uma
+                    if (frases.length === 1) {
+                        c1FraseProblemaDor.value = frases[0];
+                    }
+                }
+            });
+            
+            populateNucleoDor();
+            // --- Fim da Lógica Card 1 ---
+
+            function showStep(stepNumber) {
+                // Oculta todos os cards
+                document.querySelectorAll('.gtm-card').forEach(card => {
+                    card.classList.remove('gtm-card-active');
+                });
+                // Mostra o card atual
+                document.getElementById(`card-${stepNumber}`).classList.add('gtm-card-active');
+
+                // Atualiza o stepper
+                document.querySelectorAll('.step').forEach(stepDiv => {
+                    const step = parseInt(stepDiv.parentElement.dataset.step, 10);
+                    const circle = stepDiv.querySelector('span:first-child');
+                    
+                    stepDiv.classList.remove('step-active', 'step-completed', 'step-inactive');
+                    circle.classList.remove('step-active', 'step-completed', 'step-inactive');
+
+                    if (step < currentStep) {
+                        stepDiv.classList.add('step-completed');
+                        circle.classList.add('step-completed');
+                        circle.innerHTML = '✓'; // Checkmark
+                    } else if (step === currentStep) {
+                        stepDiv.classList.add('step-active');
+                        circle.classList.add('step-active');
+                        circle.innerHTML = step;
+                    } else {
+                        stepDiv.classList.add('step-inactive');
+                        circle.classList.add('step-inactive');
+                        circle.innerHTML = step;
+                    }
+                });
+
+                // Atualiza indicador de texto
+                stepIndicator.textContent = `Card ${stepNumber} de ${totalSteps}`;
+
+                // Atualiza estado dos botões de navegação
+                btnPrev.disabled = (stepNumber === 1);
+                
+                // Lógica para habilitar 'Próximo'
+                updateNextButtonState();
+
+                // Preencher dados de contexto
+                fillContextData(stepNumber);
+            }
+
+            function updateNextButtonState() {
+                // Habilita 'Próximo' se os dados do card atual estiverem preenchidos
+                if (currentStep === 1) {
+                    btnNext.disabled = !gtmData.card1?.output;
+                } else if (currentStep === 2) {
+                    btnNext.disabled = !gtmData.card2?.output;
+                } else if (currentStep === 3) {
+                    btnNext.disabled = !gtmData.card3?.output;
+                } else if (currentStep === 4) {
+                    // Card 4 é manual, mas vamos checar os campos principais
+                    const c4_formato = document.getElementById('c4-formato').value;
+                    const c4_grupo_teste = document.getElementById('c4-grupo-teste').value;
+                    const c4_criterio_sucesso = document.getElementById('c4-criterio-sucesso').value;
+                    btnNext.disabled = !(c4_formato && c4_grupo_teste && c4_criterio_sucesso);
+                } else if (currentStep === 5) {
+                    btnNext.disabled = !gtmData.card5?.output;
+                } else if (currentStep === 6) {
+                     // Card 6 é manual, checar campo principal
+                    const c6_aprendizado = document.getElementById('c6-aprendizado').value;
+                    btnNext.disabled = !c6_aprendizado;
+                } else if (currentStep === totalSteps) {
+                    btnNext.disabled = true; // Último passo
+                }
+            }
+
+            function fillContextData(stepNumber) {
+                if (stepNumber === 2 && gtmData.card1?.output) {
+                    document.getElementById('context-card-2').textContent = gtmData.card1.output;
+                } else if (stepNumber === 3) {
+                    let context = "Diagnóstico (Card 1):\n" + (gtmData.card1?.output || "N/A");
+                    context += "\n\nIdeias (Card 2):\n" + (gtmData.card2?.output || "N/A");
+                    document.getElementById('context-card-3').textContent = context;
+                    // Tenta pré-preencher campos
+                    if(gtmData.card2?.parsed) {
+                        document.getElementById('c3-tipo-conteudo').value = gtmData.card2.parsed.tipo || '';
+                        document.getElementById('c3-canal').value = gtmData.card2.parsed.canal || '';
+                    }
+                } else if (stepNumber === 4 && gtmData.card2?.output) {
+                    const hipoteses = gtmData.card2.output.split('\n').filter(line => line.includes('Acreditamos que'));
+                    document.getElementById('context-card-4').textContent = hipoteses.join('\n') || "Hipótese não gerada no Card 2.";
+                } else if (stepNumber === 5 && gtmData.card4) {
+                    document.getElementById('context-card-5').textContent = `
+                        Teste: ${gtmData.card4.inputs['c4-formato']}
+                        Grupos: ${gtmData.card4.inputs['c4-grupo-teste']} (G1) vs ${gtmData.card4.inputs['c4-grupo-controle']} (GDC)
+                        Critério: ${gtmData.card4.inputs['c4-criterio-sucesso']}
+                    `.trim().replace(/ +/g, ' '); // Limpa espaços extras
+                } else if (stepNumber === 6 && gtmData.card5?.output) {
+                    document.getElementById('context-card-6').textContent = gtmData.card5.output;
+                } else if (stepNumber === 7) {
+                    generateFinalSummary();
+                }
+            }
+
+            function nextStep() {
+                if (currentStep < totalSteps) {
+                    // Salvar dados manuais antes de avançar (para cards sem GPT)
+                    if (currentStep === 4) {
+                        saveCard4Data();
+                    } else if (currentStep === 6) {
+                        saveCard6Data();
+                    }
+                    currentStep++;
+                    showStep(currentStep);
+                }
+            }
+
+            function prevStep() {
+                if (currentStep > 1) {
+                    currentStep--;
+                    showStep(currentStep);
+                }
+            }
+            
+            // --- Funções de Salvamento de Dados ---
+            
+            function getFormValues(formId) {
+                const form = document.getElementById(formId);
+                const inputs = form.querySelectorAll('input, select, textarea');
+                const values = {};
+                inputs.forEach(input => {
+                    if(input.type === 'checkbox') {
+                        if(!values[input.name]) values[input.name] = [];
+                        if(input.checked) values[input.name].push(input.value);
+                    } else {
+                        values[input.id] = input.value;
+                    }
+                });
+                return values;
+            }
+
+            function saveCard4Data() {
+                gtmData.card4 = { inputs: getFormValues('form-card-4') };
+                updateNextButtonState();
+                updateCard4Output(); // Atualiza a ficha técnica em tempo real
+            }
+            
+             function saveCard6Data() {
+                gtmData.card6 = { inputs: getFormValues('form-card-6') };
+                updateNextButtonState();
+            }
+            
+            function updateCard4Output() {
+                const inputs = getFormValues('form-card-4');
+                const outputDiv = document.getElementById('output-content-4');
+
+                if (!inputs['c4-formato'] && !inputs['c4-owner'] && !inputs['c4-grupo-teste'] && !inputs['c4-grupo-controle'] && !inputs['c4-criterio-sucesso']) {
+                    outputDiv.innerHTML = '<p class="text-gray-500 italic">Preencha os campos acima para gerar a ficha técnica...</p>';
+                    return;
+                }
+                
+                const hipoteses = gtmData.card2?.output?.split('\n').filter(line => line.includes('Acreditamos que')).join('\n') || "[Hipótese do Card 2]";
+
+                const fichaTecnica = `
+- Formato do Experimento: ${inputs['c4-formato'] || 'N/A'}
+- Owner de Disparo: ${inputs['c4-owner'] || 'N/A'}
+- Grupo Teste: ${inputs['c4-grupo-teste'] || 'N/A'}
+- Grupo de Controle: ${inputs['c4-grupo-controle'] || 'N/A'}
+- Critério de Sucesso: ${inputs['c4-criterio-sucesso'] || 'N/A'}
+
+- Hipótese Testada:
+${hipoteses}
+                `;
+                outputDiv.innerText = fichaTecnica.trim();
+            }
+
+            // Adiciona listeners para habilitar 'Próximo' em cards manuais
+            document.getElementById('form-card-4').addEventListener('input', saveCard4Data);
+            document.getElementById('form-card-6').addEventListener('input', saveCard6Data);
+
+
+            // --- Lógica da API Gemini ---
+
+            async function callGeminiAPI(systemPrompt, userPrompt, button, outputDiv, contentDiv) {
+                if (!userApiKey) {
+                    showApiKeyModal();
+                    contentDiv.innerHTML = `<span class="text-red-600 font-medium">Erro:</span> Por favor, insira sua API Key nas configurações.`;
+                    outputDiv.classList.remove('hidden');
+                    return null;
+                }
+
+                const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${userApiKey}`;
+                
+                button.disabled = true;
+                contentDiv.innerHTML = '<div class="flex items-center"><div class="loader mr-2"></div> Processando...</div>';
+                outputDiv.classList.remove('hidden');
+                apiKeyError.classList.add('hidden'); // Esconde erro da modal
+
+                const payload = {
+                    contents: [{ parts: [{ text: userPrompt }] }],
+                    systemInstruction: {
+                        parts: [{ text: systemPrompt }]
+                    },
+                };
+
+                try {
+                    // Implementação de exponential backoff
+                    let response;
+                    let delay = 1000;
+                    for (let i = 0; i < 5; i++) {
+                        response = await fetch(API_URL, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(payload)
+                        });
+
+                        if (response.ok) {
+                            break; // Sucesso, sair do loop
+                        } else if (response.status === 429 || response.status >= 500) {
+                            // Erro de throttling ou servidor, esperar e tentar novamente
+                            await new Promise(resolve => setTimeout(resolve, delay));
+                            delay *= 2;
+                        } else if (response.status === 400 || response.status === 401 || response.status === 403) {
+                            // Erro de chave de API inválida (Bad Request, Unauthorized, Forbidden)
+                            localStorage.removeItem('GTM_BUILDER_API_KEY'); // Limpa a chave ruim
+                            userApiKey = null;
+                            apiKeyError.textContent = "Sua API Key é inválida ou expirou. Por favor, insira uma nova.";
+                            apiKeyError.classList.remove('hidden');
+                            showApiKeyModal();
+                            throw new Error("API Key inválida ou expirada. Insira uma nova.");
+                        } else {
+                            // Outro erro (ex: 404 Not Found), não tentar novamente
+                            throw new Error(`Erro na API: ${response.status} ${response.statusText}`);
+                        }
+                    }
+
+                    if (!response || !response.ok) {
+                         if(response) {
+                            throw new Error(`Falha na API após tentativas: ${response.status} ${response.statusText}`);
+                         } else {
+                            throw new Error(`Falha na API após tentativas: Nenhuma resposta recebida.`);
+                         }
+                    }
+
+                    const result = await response.json();
+                    const text = result.candidates?.[0]?.content?.parts?.[0]?.text;
+
+                    if (text) {
+                        contentDiv.innerText = text; // Alterado de .textContent para .innerText
+                        return text;
+                    } else {
+                        // Resposta veio OK (200) mas sem conteúdo, pode ser filtro de segurança
+                        if (result.candidates?.[0]?.finishReason === 'SAFETY') {
+                             throw new Error("Resposta bloqueada pelo filtro de segurança da API.");
+                        }
+                        throw new Error("Resposta da API inválida ou vazia.");
+                    }
+                } catch (error) {
+                    console.error(error);
+                    contentDiv.innerHTML = `<span class="text-red-600 font-medium">Erro ao gerar conteúdo:</span><br>${error.message}`;
+                    return null;
+                } finally {
+                    button.disabled = false;
+                }
+            }
+
+            // --- Handlers dos Cards ---
+
+            btnCard1.addEventListener('click', async () => {
+                const inputs = getFormValues('form-card-1');
+                gtmData.card1 = { inputs };
+                
+                // O System Prompt permanece profissional (PMM Sênior), alinhado com "confiável e potente"
+                const systemPrompt = `Você é um PMM (Product Marketing Manager) sênior. Sua tarefa é analisar a dor de um cliente e gerar um diagnóstico conciso. Formate a saída como texto simples, usando quebras de linha. NÃO use markdown (como **, *, #). Use hífens para listas. Formate a saída exatamente com os seguintes títulos:\n- Diagnóstico Estruturado:\n- Persona Comportamental:\n- Insight Central:`;
+                const userPrompt = `
+                    Jornada: ${inputs['c1-jornada']}
+                    Núcleo da Dor: ${inputs['c1-nucleo-dor']}
+                    Resumo da Dor: ${inputs['c1-resumo-dor']}
+                    Frase-Problema: ${inputs['c1-frase-problema-dor']}
+                    Comportamento Atual: ${inputs['c1-comportamento-atual']}
+                    Comportamento Esperado: ${inputs['c1-comportamento-esperado']}
+                    
+                    Gere o diagnóstico.
+                `;
+
+                const outputText = await callGeminiAPI(
+                    systemPrompt, 
+                    userPrompt, 
+                    btnCard1, 
+                    document.getElementById('output-card-1'), 
+                    document.getElementById('output-content-1')
+                );
+                
+                if (outputText) {
+                    gtmData.card1.output = outputText;
+                    updateNextButtonState();
+                }
+            });
+            
+            btnCard2.addEventListener('click', async () => {
+                const inputs = getFormValues('form-card-2');
+                gtmData.card2 = { inputs };
+                
+                const systemPrompt = `Você é um estrategista de conteúdo e growth. Sua tarefa é gerar 2-3 ideias de testes com base em um diagnóstico. Formate a saída como texto simples, usando quebras de linha. NÃO use markdown (como **, *, #). Use hífens para listas. Para cada ideia, inclua "Canal Sugerido" e "Formato de Teste". No final, gere uma "Hipótese" clara no formato "Acreditamos que se fizermos X para Y, obteremos Z resultado."`;
+                const userPrompt = `
+                    Diagnóstico (Card 1): 
+                    ${gtmData.card1.output}
+                    
+                    Inputs do PMM:
+                    Tipo de Conteúdo Desejado: ${inputs['c2-tipo-conteudo']}
+                    Canais Preferenciais: ${inputs['c2-canal'].join(', ')}
+                    
+                    Gere as ideias e a hipótese.
+                `;
+
+                const outputText = await callGeminiAPI(
+                    systemPrompt, 
+                    userPrompt, 
+                    btnCard2, 
+                    document.getElementById('output-card-2'), 
+                    document.getElementById('output-content-2')
+                );
+                
+                if (outputText) {
+                    gtmData.card2.output = outputText;
+                    // Tentar extrair dados para o próximo card
+                    try {
+                        const tipoMatch = outputText.match(/Ideia 1:\s*([^(\n]+)/);
+                        const canalMatch = outputText.match(/Canal Sugerido:\s*([^\n]+)/);
+                        gtmData.card2.parsed = {
+                            tipo: tipoMatch ? tipoMatch[1].trim() : inputs['c2-tipo-conteudo'],
+                            canal: canalMatch ? canalMatch[1].trim() : inputs['c2-canal'][0]
+                        };
+                    } catch(e) {
+                         gtmData.card2.parsed = { tipo: inputs['c2-tipo-conteudo'], canal: inputs['c2-canal'][0] };
+                    }
+                    updateNextButtonState();
+                }
+            });
+
+            btnCard3.addEventListener('click', async () => {
+                const inputs = getFormValues('form-card-3');
+                gtmData.card3 = { inputs };
+                
+                const systemPrompt = `Você é um líder de PMM. Sua tarefa é escrever um briefing de conteúdo completo e acionável. Formate a saída como texto simples, usando quebras de linha. NÃO use markdown (como **, *, #). Use hífens para listas. Formate a saída exatamente com os seguintes títulos:\n- Objetivo:\n- Público-alvo (Persona Comportamental):\n- Dor Mapeada:\n- Mensagem Principal:\n- Proposta de Valor:\n- Exemplo de Copy (para o canal):\n- Tracking Sugerido:`;
+                const userPrompt = `
+                    Contexto (Diagnóstico): 
+                    ${gtmData.card1.output}
+                    
+                    Ideia Selecionada:
+                    ${gtmData.card2.output}
+
+                    Inputs do Briefing:
+                    Tipo de Conteúdo: ${inputs['c3-tipo-conteudo']}
+                    Canal: ${inputs['c3-canal']}
+                    Tom de Voz: ${inputs['c3-tom-voz']}
+                    CTA Desejado: ${inputs['c3-cta']}
+                    
+                    Gere o briefing completo.
+                `;
+
+                const outputText = await callGeminiAPI(
+                    systemPrompt, 
+                    userPrompt, 
+                    btnCard3, 
+                    document.getElementById('output-card-3'), 
+                    document.getElementById('output-content-3')
+                );
+                
+                if (outputText) {
+                    gtmData.card3.output = outputText;
+                    updateNextButtonState();
+                }
+            });
+            
+            btnCard5.addEventListener('click', async () => {
+                const inputs = getFormValues('form-card-5');
+                gtmData.card5 = { inputs };
+                
+                const systemPrompt = `Você é um analista de dados de marketing. Sua tarefa é resumir resultados de testes e dar recomendações. Formate a saída como texto simples, usando quebras de linha. NÃO use markdown (como **, *, #). Use hífens para listas. Formate a saída exatamente com os seguintes títulos:\n- Resumo Executivo:\n- Recomendações (Escalar, Ajustar ou Descontinuar):\n- Sugestão de Próximos Testes:`;
+                const userPrompt = `
+                    Contexto do Teste (Card 4):
+                    ${document.getElementById('context-card-5').textContent}
+                    
+                    Hipótese Testada:
+                    ${document.getElementById('context-card-4').textContent}
+
+                    Resultados Inseridos:
+                    Engajamento com Conteúdo: ${inputs['c5-engajamento']}
+                    Comportamento Alterado: ${inputs['c5-comportamento']}
+                    Impacto em Risco/Negócio: ${inputs['c5-impacto']}
+                    
+                    Gere a análise e as recomendações.
+                `;
+
+                const outputText = await callGeminiAPI(
+                    systemPrompt, 
+                    userPrompt, 
+                    btnCard5, 
+                    document.getElementById('output-card-5'), 
+                    document.getElementById('output-content-5')
+                );
+                
+                if (outputText) {
+                    gtmData.card5.output = outputText;
+                    updateNextButtonState();
+                }
+            });
+
+            // --- Resumo Final ---
+            
+            function generateFinalSummary() {
+                const summaryContainer = document.getElementById('final-summary');
+                summaryContainer.innerHTML = ''; // Limpa resumo anterior
+                
+                function createSummarySection(title, data) {
+                    const section = document.createElement('div');
+                    section.className = 'p-4 bg-gray-50 rounded-lg border border-gray-200';
+                    const titleEl = document.createElement('h3');
+                    titleEl.className = 'text-xl font-semibold text-gray-800 border-b pb-2 mb-3';
+                    titleEl.textContent = title;
+                    section.appendChild(titleEl);
+
+                    if (typeof data === 'string') {
+                        const contentEl = document.createElement('p');
+                        contentEl.className = 'text-gray-700 whitespace-pre-wrap';
+                        contentEl.textContent = data;
+                        section.appendChild(contentEl);
+                    } else if (typeof data === 'object') {
+                        const list = document.createElement('ul');
+                        list.className = 'list-disc list-inside space-y-1';
+                        for (const key in data) {
+                            const value = data[key];
+                            // Skip empty values
+                            if (!value || (Array.isArray(value) && value.length === 0)) continue; 
+                            
+                            const item = document.createElement('li');
+                            item.className = 'text-gray-700';
+                            const prettyKey = PRETTY_NAMES[key] || key; // Use pretty name
+                            item.innerHTML = `<strong class="font-medium text-gray-900">${prettyKey}:</strong> ${Array.isArray(value) ? value.join(', ') : data[key]}`;
+                            list.appendChild(item);
+                        }
+                        section.appendChild(list);
+                    }
+                    return section;
+                }
+                
+                // Card 1
+                if (gtmData.card1) {
+                    summaryContainer.appendChild(createSummarySection('🔹 1. Diagnóstico (Inputs)', gtmData.card1.inputs));
+                    summaryContainer.appendChild(createSummarySection('🔹 1. Diagnóstico (Output GPT)', gtmData.card1.output));
+                }
+                // Card 2
+                if (gtmData.card2) {
+                    summaryContainer.appendChild(createSummarySection('🔹 2. Ideias (Inputs)', gtmData.card2.inputs));
+                    summaryContainer.appendChild(createSummarySection('🔹 2. Ideias (Output GPT)', gtmData.card2.output));
+                }
+                // Card 3
+                if (gtmData.card3) {
+                    summaryContainer.appendChild(createSummarySection('🔹 3. Briefing (Inputs)', gtmData.card3.inputs));
+                    summaryContainer.appendChild(createSummarySection('🔹 3. Briefing (Output GPT)', gtmData.card3.output));
+                }
+                 // Card 4
+                if (gtmData.card4) {
+                    summaryContainer.appendChild(createSummarySection('🔹 4. Estrutura do Teste A/B (Inputs)', gtmData.card4.inputs));
+                }
+                 // Card 5
+                if (gtmData.card5) {
+                    summaryContainer.appendChild(createSummarySection('🔹 5. Dashboard (Inputs)', gtmData.card5.inputs));
+                    summaryContainer.appendChild(createSummarySection('🔹 5. Dashboard (Output GPT)', gtmData.card5.output));
+                }
+                 // Card 6
+                if (gtmData.card6) {
+                    summaryContainer.appendChild(createSummarySection('🔹 6. Feedback Loop (Inputs)', gtmData.card6.inputs));
+                }
+            }
+
+            function getSummaryAsMarkdown() {
+                let md = "# 🚀 Resumo da Iniciativa GTM\n\n";
+
+                function formatDataAsMarkdown(data) {
+                    let s = "";
+                    if (typeof data === 'string') {
+                        // Limpa a string de IA para não ter markdown estranho
+                        s += data.replace(/^[*-]\s*/gm, '').trim() + "\n";
+                    } else if (typeof data === 'object') {
+                        for (const key in data) {
+                            const value = data[key];
+                            // Skip empty values
+                            if (!value || (Array.isArray(value) && value.length === 0)) continue;
+                            
+                            const prettyKey = PRETTY_NAMES[key] || key;
+                            s += `- **${prettyKey}:** ${Array.isArray(value) ? value.join(', ') : value}\n`;
+                        }
+                    }
+                    return s;
+                }
+                
+                // Card 1
+                if (gtmData.card1) {
+                    md += "## 🔹 1. Diagnóstico (Inputs)\n";
+                    md += formatDataAsMarkdown(gtmData.card1.inputs);
+                    md += "\n## 🔹 1. Diagnóstico (Output GPT)\n";
+                    md += formatDataAsMarkdown(gtmData.card1.output);
+                }
+                // Card 2
+                if (gtmData.card2) {
+                    md += "\n## 🔹 2. Ideias (Inputs)\n";
+                    md += formatDataAsMarkdown(gtmData.card2.inputs);
+                    md += "\n## 🔹 2. Ideias (Output GPT)\n";
+                    md += formatDataAsMarkdown(gtmData.card2.output);
+                }
+                // Card 3
+                if (gtmData.card3) {
+                    md += "\n## 🔹 3. Briefing (Inputs)\n";
+                    md += formatDataAsMarkdown(gtmData.card3.inputs);
+                    md += "\n## 🔹 3. Briefing (Output GPT)\n";
+                    md += formatDataAsMarkdown(gtmData.card3.output);
+                }
+                 // Card 4
+                if (gtmData.card4) {
+                    md += "\n## 🔹 4. Estrutura do Teste A/B (Inputs)\n";
+                    md += formatDataAsMarkdown(gtmData.card4.inputs);
+                }
+                 // Card 5
+                if (gtmData.card5) {
+                    md += "\n## 🔹 5. Dashboard (Inputs)\n";
+                    md += formatDataAsMarkdown(gtmData.card5.inputs);
+                    md += "\n## 🔹 5. Dashboard (Output GPT)\n";
+                    md += formatDataAsMarkdown(gtmData.card5.output);
+                }
+                 // Card 6
+                if (gtmData.card6) {
+                    md += "\n## 🔹 6. Feedback Loop (Inputs)\n";
+                    md += formatDataAsMarkdown(gtmData.card6.inputs);
+                }
+                
+                return md;
+            }
+
+            function downloadSummary() {
+                const markdownContent = getSummaryAsMarkdown();
+                
+                const blob = new Blob([markdownContent], { type: 'text/markdown;charset=utf-8' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'resumo_gtm_builder.md';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            }
+
+
+            // Navegação
+            btnNext.addEventListener('click', nextStep);
+            btnPrev.addEventListener('click', prevStep);
+            btnDownloadSummary.addEventListener('click', downloadSummary);
+
+            // Inicia o app
+            loadApiKey();
+            showStep(currentStep);
+        });
+    </script>
+</body>
+</html>
+
